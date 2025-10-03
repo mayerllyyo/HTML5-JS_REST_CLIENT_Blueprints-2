@@ -1,0 +1,92 @@
+body {
+     padding: 20px;
+     background-color: #f8f9fa;
+}
+
+.page-header {
+    border-bottom: 2px solid #337ab7;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+.page-header h1 {
+    color: #337ab7;
+    font-weight: bold;
+}
+
+.panel-body {
+    background-color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+#main-container {
+    display: grid;
+    grid-template-columns: 1fr 2fr; /* Más espacio para el canvas */
+    gap: 30px;
+    margin-bottom: 20px;
+}
+
+#table-container {
+    background-color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+#canvas-container {
+    background-color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+table th, table td {
+    vertical-align: middle;
+}
+
+#blueprintTable button {
+    padding: 4px 10px;
+}
+
+#myCanvas {
+    width: 100%;
+    max-width: 800px;
+    height: 500px;
+    border: 1px solid #ddd;
+    background-color: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.open-button {
+    color: #000000;
+}
+
+.points-display {
+    background-color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    font-weight: bold;
+}
+
+#blueprint-name {
+    color: #337ab7;
+    font-weight: bold;
+}
+
+#author-name {
+    font-weight: bold;
+    color: #337ab7;
+}
+
+@media (max-width: 992px) {
+    #main-container {
+        grid-template-columns: 1fr;
+    }
+}
