@@ -48,7 +48,25 @@ var apiclient = (function(){
                     callback([]);
                 }
             });
+        },
+
+        updateBlueprint: function(authname, bpname, blueprint){
+            return $.ajax({
+                url: baseUrl + "/" + authname + "/" + bpname,
+                type: 'PUT',
+                data: JSON.stringify(blueprint),
+                contentType: "application/json"
+            });
+        },
+
+        getBlueprintsByAuthorPromise: function(authname){
+            return $.ajax({
+                url: baseUrl + "/" + authname,
+                method: "GET",
+                dataType: "json"
+            });
         }
+
     };
 
 })();
