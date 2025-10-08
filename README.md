@@ -1,64 +1,143 @@
-#### Escuela Colombiana de Ingeniería
-#### Procesos de desarrollo de software - PDSW
-#### Construción de un cliente 'grueso' con un API REST, HTML5, Javascript y CSS3. Parte II.
+# **Building a "Thick" Client with a REST API, HTML5, JavaScript, and CSS3 (Part II)**
 
+## **Description**
 
+This project extends the previous exercise by integrating client-side interaction with a REST API through a modular 
+JavaScript architecture.
+The goal is to allow users to create, edit, update, and delete blueprints dynamically using an HTML5 canvas and 
+AJAX-based communication with the backend API.
+
+## **Authors**
+- **Santiago Hurtado Martínez** [SantiagoHM20](https://github.com/SantiagoHM20)
+- **Mayerlly Suárez Correa** [mayerllyyo](https://github.com/mayerllyyo)
+
+### **PDSW Workshop – Thick Client with REST API, HTML5, JavaScript, and CSS3 (Part II)**
 
 ![](img/mock2.png)
 
-1. Agregue al canvas de la página un manejador de eventos que permita capturar los 'clicks' realizados, bien sea a través del mouse, o a través de una pantalla táctil. Para esto, tenga en cuenta [este ejemplo de uso de los eventos de tipo 'PointerEvent'](https://mobiforge.com/design-development/html5-pointer-events-api-combining-touch-mouse-and-pen) (aún no soportado por todos los navegadores) para este fin. Recuerde que a diferencia del ejemplo anterior (donde el código JS está incrustado en la vista), se espera tener la inicialización de los manejadores de eventos correctamente modularizado, tal [como se muestra en este codepen](https://codepen.io/hcadavid/pen/BwWbrw).
 
-2. Agregue lo que haga falta en sus módulos para que cuando se capturen nuevos puntos en el canvas abierto (si no se ha seleccionado un canvas NO se debe hacer nada):
-	1. Se agregue el punto al final de la secuencia de puntos del canvas actual (sólo en la memoria de la aplicación, AÚN NO EN EL API!).
-	2. Se repinte el dibujo.
+1. **Pointer Events and Canvas Interaction**
 
-3. Agregue el botón Save/Update. Respetando la arquitectura de módulos actual del cliente, haga que al oprimirse el botón:
-	1. Se haga PUT al API, con el plano actualizado, en su recurso REST correspondiente.
-	2. Se haga GET al recurso /blueprints, para obtener de nuevo todos los planos realizados.
-	3. Se calculen nuevamente los puntos totales del usuario.
+	Add an event handler to the canvas that captures clicks (mouse or touchscreen) using PointerEvent.
+	The initialization of handlers must be modularized and not embedded directly in the HTML.
 
-	Para lo anterior tenga en cuenta:
-
-	* jQuery no tiene funciones para peticiones PUT o DELETE, por lo que es necesario 'configurarlas' manualmente a través de su API para AJAX. Por ejemplo, para hacer una peticion PUT a un recurso /myrecurso:
+	We implemented addEventListener in the initCanvasEvents() function inside app.js.
 
 	```javascript
-    return $.ajax({
-        url: "/mirecurso",
-        type: 'PUT',
-        data: '{"prop1":1000,"prop2":"papas"}',
-        contentType: "application/json"
-    });
-    
+	function initCanvasEvents(){
+		const canvas = $("#myCanvas")[0];
+	
+		if (window.PointerEvent) {
+			canvas.addEventListener("pointerdown", handleCanvasClick);
+		} else {
+			canvas.addEventListener("mousedown", handleCanvasClick);
+			canvas.addEventListener("touchstart", handleCanvasClick);
+		}
+	}
 	```
-	Para éste note que la propiedad 'data' del objeto enviado a $.ajax debe ser un objeto jSON (en formato de texto). Si el dato que quiere enviar es un objeto JavaScript, puede convertirlo a jSON con: 
+   This allows the user to add points on the canvas by clicking or touching, and each new point is immediately drawn.
+
+2. **Save and Update Blueprints (PUT)**
+
+	When clicking Save/Update, the system sends a PUT request to the REST API to update the blueprint, then performs a GET request to refresh all blueprints and recalculate total points.
+All operations are handled with Promises to ensure correct execution order.
+
+	We modified and implemented the following functions in app.js:
+	```javascript
+	function drawLineSegments(blueprintName){
+		...
+	}
+	```
+	- Stores the selected blueprint in currentBlueprint.
+    - Delegates the drawing to the renderCanvas() function.
+
+	```javascript
+	function renderCanvas(){
+		if(!currentBlueprint) return;
+	
+		const canvas = $("#myCanvas")[0];
+		const ctx = canvas.getContext("2d");
+	
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		$("#blueprint-name").text(currentBlueprint.name);
+	
+		if(currentBlueprint.points && currentBlueprint.points.length > 0){
+			ctx.strokeStyle = "#2E7D32";
+			ctx.lineWidth = 2;
+			ctx.fillStyle = "#FF5722";
+	
+			ctx.beginPath();
+			ctx.moveTo(currentBlueprint.points[0].x, currentBlueprint.points[0].y);
+	
+			for(let i = 1; i < currentBlueprint.points.length; i++){
+				ctx.lineTo(currentBlueprint.points[i].x, currentBlueprint.points[i].y);
+			}
+			ctx.stroke();
+	
+			currentBlueprint.points.forEach((p) => {
+				ctx.beginPath();
+				ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
+				ctx.fill();
+			});
+		}
+	}
+	```
+	And for table updates:
+	```javascript
+	function updateBlueprintPointsInTable(){
+		...
+	}
+	```
+	- Updates the number of points in memory and in the HTML table.
+	- Recalculates the user’s total points dynamically.
+
+   Finally, updateBlueprintsTable() was refactored to use updateTotalPoints().
+ 
+3. **Create New Blueprints (POST)**
+
+	When clicking Save/Update, the application should:
+
+   - Send a PUT request to update the blueprint on the API.
+   - Perform a GET to refresh the author’s blueprints.
+   - Recalculate the total number of points.
+   All actions use Promises to guarantee proper execution order.
+
+	In apiclient.js:
 	
 	```javascript
-	JSON.stringify(objetojavascript),
+	updateBlueprint: function(authname, bpname, blueprint){
+		return $.ajax({
+			url: baseUrl + "/" + authname + "/" + bpname,
+			type: 'PUT',
+			data: JSON.stringify(blueprint),
+			contentType: "application/json"
+		});
+	}
+	
+	getBlueprintsByAuthorPromise: function(authname){
+		return $.ajax({
+			url: baseUrl + "/" + authname,
+			method: "GET",
+			dataType: "json"
+		});
+	}
 	```
-	* Como en este caso se tienen tres operaciones basadas en _callbacks_, y que las mismas requieren realizarse en un orden específico, tenga en cuenta cómo usar las promesas de JavaScript [mediante alguno de los ejemplos disponibles](http://codepen.io/hcadavid/pen/jrwdgK).
-
-4. Agregue el botón 'Create new blueprint', de manera que cuando se oprima: 
-	* Se borre el canvas actual.
-	* Se solicite el nombre del nuevo 'blueprint' (usted decide la manera de hacerlo).
+	In app.js:
+	```javascript
+	function saveUpdateBlueprint(){
+		if(!currentBlueprint || !selectedAuthor) return;
 	
-	Esta opción debe cambiar la manera como funciona la opción 'save/update', pues en este caso, al oprimirse la primera vez debe (igualmente, usando promesas):
-
-	1. Hacer POST al recurso /blueprints, para crear el nuevo plano.
-	2. Hacer GET a este mismo recurso, para actualizar el listado de planos y el puntaje del usuario.
-
-5. Agregue el botón 'DELETE', de manera que (también con promesas):
-	* Borre el canvas.
-	* Haga DELETE del recurso correspondiente.
-	* Haga GET de los planos ahora disponibles.
-
-### Criterios de evaluación
-
-1. Funcional
-	* La aplicación carga y dibuja correctamente los planos.
-	* La aplicación actualiza la lista de planos cuando se crea y almacena (a través del API) uno nuevo.
-	* La aplicación permite modificar planos existentes.
-	* La aplicación calcula correctamente los puntos totales.
-2. Diseño
-	* Los callback usados al momento de cargar los planos y calcular los puntos de un autor NO hace uso de ciclos, sino de operaciones map/reduce.
-	* Las operaciones de actualización y borrado hacen uso de promesas para garantizar que el cálculo del puntaje se realice sólo hasta cando se hayan actualizados los datos en el backend. Si se usan callbacks anidados se evalúa como R.
-	
+		apiclient.updateBlueprint(selectedAuthor, currentBlueprint.name, currentBlueprint)
+			.then(() => apiclient.getBlueprintsByAuthorPromise(selectedAuthor))
+			.then((data) => {
+				blueprints = data.map(bp => ({name: bp.name, points: bp.points.length}));
+				refreshBlueprintTable();
+				updateTotalPoints();
+				alert("Blueprint guardado exitosamente");
+			})
+			.catch((error) => {
+				console.error("Error al guardar el blueprint:", error);
+				alert("Error al guardar el blueprint");
+			});
+	}
+	```
