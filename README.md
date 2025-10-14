@@ -141,3 +141,21 @@ All operations are handled with Promises to ensure correct execution order.
 			});
 	}
 	```
+
+
+4. **Add the **“Create new blueprint”** button so that when it is pressed:
+
+- The current canvas is cleared.  
+- The user is prompted to enter the name of the new blueprint (you decide how to do this).  
+- This option should modify how the **“save/update”** function works, since in this case, when it is pressed for the first time, it must (also using promises):
+
+  - Make a **POST** request to the **/blueprints** resource to create the new blueprint.  
+  - Make a **GET** request to the same resource to update the list of blueprints and the user’s score.
+
+
+  5. **Add the **“DELETE”** button so that (also using promises):
+
+- The canvas is cleared.  
+- A **DELETE** request is made to the corresponding resource.  
+- A **GET** request is made to retrieve the blueprints that are now available.
+

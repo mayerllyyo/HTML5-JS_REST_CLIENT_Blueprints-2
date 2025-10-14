@@ -1,6 +1,46 @@
 var apiclient = (function(){
 
-    const baseUrl = "/blueprintsApi/blueprints";
+
+    const baseUrl = "/api/blueprints";
+    
+
+    const createBlueprint = (author, blueprint) => {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: baseUrl,
+                type: "POST",
+                data: JSON.stringify({
+                    author: author,
+                    name: blueprint.name,
+                    points: blueprint.points
+                }),
+                contentType: "application/json",
+                dataType: "json",
+                success: function(data) {
+                    resolve(data);
+                },
+                error: function(error) {
+                    console.error("Error details:", error);
+                    reject(error);
+                }
+            });
+        });
+    };
+
+    const deleteBlueprint = (author, blueprintName) => {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: baseUrl + "/" + author + "/" + blueprintName,
+                type: "DELETE",
+                success: function() {
+                    resolve();
+                },
+                error: function(error) {
+                    reject(error);
+                }
+            });
+        });
+    };
 
     return {
         getBlueprintsByAuthor: function(authname, callback){
@@ -65,7 +105,10 @@ var apiclient = (function(){
                 method: "GET",
                 dataType: "json"
             });
-        }
+        },
+
+        createBlueprint,
+        deleteBlueprint
 
     };
 

@@ -1,4 +1,4 @@
-const apiModule = apiclient; //apiclient o apimock
+const apiModule = apimock; //apiclient o apimock
 
 const BlueprintApi = (function (){
 
@@ -6,6 +6,7 @@ const BlueprintApi = (function (){
     let blueprints = [];
     let authorsCache = [];
     let currentBlueprint = null;
+    let isNewBlueprint = false;
 
     function getAll(callback, errorCb){
         if(apiModule === apimock){
@@ -125,6 +126,9 @@ const BlueprintApi = (function (){
 
         // Actualizar nombre del plano
         $("#blueprint-name").text(currentBlueprint.name);
+        
+        // Habilitar el botón de borrado cuando hay un blueprint seleccionado
+        $("#btn-delete").prop("disabled", false);
 
         // Dibujar puntos y líneas
         if(currentBlueprint.points && currentBlueprint.points.length > 0){
@@ -149,6 +153,19 @@ const BlueprintApi = (function (){
                 ctx.fill();
                 });
             }
+    }
+
+    function clearCanvas() {
+        const canvas = $("#myCanvas")[0];
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        $("#blueprint-name").text("");
+        
+        // Deshabilitar el botón de borrado cuando no hay blueprint seleccionado
+        $("#btn-delete").prop("disabled", true);
+        
+        // Resetear el blueprint actual
+        currentBlueprint = null;
     }
 
     function initCanvasEvents(){
@@ -204,36 +221,128 @@ const BlueprintApi = (function (){
         if (!currentBlueprint) return alert("No hay blueprint seleccionado");
         if (!selectedAuthor) return alert("No hay autor seleccionado");
 
-        apiclient.updateBlueprint(selectedAuthor, currentBlueprint.name, currentBlueprint)
-            .then(() => apiclient.getBlueprintsByAuthorPromise(selectedAuthor))
-            .then(data => {
-                blueprints = data.map(bp => ({name: bp.name, points: bp.points.length}));
+        try {
+            if (isNewBlueprint) {
+                const blueprint = {
+                    author: selectedAuthor,
+                    name: currentBlueprint.name,
+                    points: currentBlueprint.points
+                };
+                
+                if (apiModule === apimock) {
+                    apimock.createBlueprintSync(selectedAuthor, currentBlueprint.name, currentBlueprint.points);
+                    isNewBlueprint = false;
+                    updateBlueprintsTable();
+                    alert("Blueprint creado exitosamente (modo mock)");
+                } else {
+                    apiclient.createBlueprint(selectedAuthor, blueprint)
+                        .then(() => apiclient.getBlueprintsByAuthorPromise(selectedAuthor))
+                        .then(data => {
+                            isNewBlueprint = false;
+                            blueprints = data.map(bp => ({name: bp.name, points: bp.points.length}));
+                            updateBlueprintTableFromData(data);
+                            updateTotalPoints();
+                            alert("Blueprint creado exitosamente");
+                        })
+                        .catch((error) => {
+                            console.error("Error al crear el blueprint:", error);
+                            alert("Error al crear el blueprint. Verifica la conexión al servidor y la URL del API.");
+                        });
+                }
+            } else {
+                apiclient.updateBlueprint(selectedAuthor, currentBlueprint.name, currentBlueprint)
+                    .then(() => apiclient.getBlueprintsByAuthorPromise(selectedAuthor))
+                    .then(data => {
+                        blueprints = data.map(bp => ({name: bp.name, points: bp.points.length}));
+                        updateBlueprintTableFromData(data);
+                        updateTotalPoints();
+                        alert("Blueprint guardado exitosamente");
+                    })
+                    .catch((error) => {
+                        console.error("Error al guardar el blueprint:", error);
+                        alert("Error al guardar el blueprint");
+                    });
+            }
+        } catch (e) {
+            console.error("Error crítico:", e);
+            alert("Ocurrió un error al procesar la solicitud. Verifica la consola para más detalles.");
+        }
+    }
 
-                const tbody = $("#blueprintTable tbody").empty();
-                blueprints.forEach(bp => tbody.append(`
-                      <tr>
-                        <td>${bp.name}</td>
-                        <td class="text-center">${bp.points}</td>
-                        <td class="text-center">
-                            <button class="btn btn-sm btn-success open-btn" data-bp="${bp.name}">
-                                <span class="glyphicon glyphicon-eye-open"></span> Open
-                            </button>
-                        </td>
-                      </tr>
-                    `));
+    function updateBlueprintTableFromData(data) {
+        const tbody = $("#blueprintTable tbody").empty();
+        blueprints.forEach(bp => tbody.append(`
+              <tr>
+                <td>${bp.name}</td>
+                <td class="text-center">${bp.points}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-success open-btn" data-bp="${bp.name}">
+                        <span class="glyphicon glyphicon-eye-open"></span> Open
+                    </button>
+                </td>
+              </tr>
+            `));
 
-                $(".open-btn").off('click').on("click", function() {
-                    const blueprintName = $(this).data("bp");
-                    BlueprintApi.drawLineSegments(blueprintName);
+        $(".open-btn").off('click').on("click", function() {
+            const blueprintName = $(this).data("bp");
+            BlueprintApi.drawLineSegments(blueprintName);
+        });
+    }
+
+    function createNewBlueprint() {
+        if (!selectedAuthor) {
+            return alert("Seleccione un autor primero");
+        }
+
+        clearCanvas();
+        
+        const blueprintName = prompt("Ingrese el nombre para el nuevo blueprint:");
+        if (!blueprintName || blueprintName.trim() === '') return;
+        
+        currentBlueprint = {
+            author: selectedAuthor,
+            name: blueprintName,
+            points: []
+        };
+        
+        // Actualizar la interfaz
+        $("#blueprint-name").text(blueprintName);
+        
+        // Marcar como nuevo blueprint para que el save actúe como create
+        isNewBlueprint = true;
+        
+        // Habilitar el botón de borrado
+        $("#btn-delete").prop("disabled", false);
+        
+        alert(`Nuevo blueprint "${blueprintName}" creado. Dibuje puntos y luego guarde para crear.`);
+    }
+    
+    function deleteCurrentBlueprint() {
+        if (!currentBlueprint || !selectedAuthor) {
+            alert("No hay un blueprint seleccionado para borrar");
+            return;
+        }
+        
+        if (confirm(`¿Está seguro que desea eliminar el blueprint "${currentBlueprint.name}"?`)) {
+            apiclient.deleteBlueprint(selectedAuthor, currentBlueprint.name)
+                .then(() => {
+                    clearCanvas();
+                    
+                    // Obtener la lista actualizada de blueprints
+                    return apiclient.getBlueprintsByAuthorPromise(selectedAuthor);
+                })
+                .then(data => {
+                    // Actualizar la tabla y el puntaje
+                    blueprints = data.map(bp => ({name: bp.name, points: bp.points.length}));
+                    updateBlueprintTableFromData(data);
+                    updateTotalPoints();
+                    alert("Blueprint eliminado exitosamente");
+                })
+                .catch(error => {
+                    console.error("Error al eliminar el blueprint:", error);
+                    alert("Error al eliminar el blueprint");
                 });
-
-                updateTotalPoints();
-                alert("Blueprint guardado exitosamente");
-            })
-            .catch((error) => {
-                console.error("Error al guardar el blueprint:", error);
-                alert("Error al guardar el blueprint");
-            });
+        }
     }
 
     return {
@@ -241,7 +350,9 @@ const BlueprintApi = (function (){
         consultAuthor,
         drawLineSegments,
         saveUpdateBlueprint,
-        initCanvasEvents
+        initCanvasEvents,
+        createNewBlueprint,
+        deleteCurrentBlueprint
     };
 })();
 
@@ -249,6 +360,9 @@ $(function(){
     $("#author").on("focus", ()=>BlueprintApi.loadAuthors());
     $("#btn-consult").on("click", ()=>BlueprintApi.consultAuthor());
     $("#btn-save").on("click", ()=>BlueprintApi.saveUpdateBlueprint());
+    $("#btn-create-blueprint").on("click", ()=>BlueprintApi.createNewBlueprint());
+    $("#btn-delete").on("click", ()=>BlueprintApi.deleteCurrentBlueprint());
 
     BlueprintApi.initCanvasEvents();
 });
+
