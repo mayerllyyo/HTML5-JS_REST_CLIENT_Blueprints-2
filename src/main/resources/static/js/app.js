@@ -1,4 +1,4 @@
-const apiModule = apimock; //apiclient o apimock
+const apiModule = apiclient; //apiclient o apimock
 
 const BlueprintApi = (function (){
 

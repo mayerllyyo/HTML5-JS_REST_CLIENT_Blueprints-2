@@ -31,7 +31,7 @@ public class BlueprintAPIController {
     @Autowired
     private BlueprintsServices blueprintsServices;
 
-    public BlueprintAPIController(BlueprintsServices blueprintsServices){
+    public BlueprintAPIController(BlueprintsServices blueprintsServices) {
         this.blueprintsServices = blueprintsServices;
     }
 
@@ -52,6 +52,7 @@ public class BlueprintAPIController {
             return new ResponseEntity<>("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
     /**
      * GET /blueprints/{author} Get all plans from a specific author
      */
@@ -127,6 +128,21 @@ public class BlueprintAPIController {
         } catch (Exception ex) {
             Logger.getLogger(BlueprintAPIController.class.getName()).log(Level.SEVERE, null, ex);
             return new ResponseEntity<>("Error updating blueprint: " + ex.getMessage(), HttpStatus.FORBIDDEN);
+        }
+    }
+
+    @DeleteMapping("{author}/{bpname}")
+    public ResponseEntity<?> deleteBlueprint(@PathVariable String author,
+                                             @PathVariable String bpname) {
+        try {
+            blueprintsServices.delete(author,bpname);
+            return new ResponseEntity<>("Blueprint deleted successfully", HttpStatus.OK);
+        } catch (BlueprintNotFoundException ex) {
+            Logger.getLogger(BlueprintAPIController.class.getName()).log(Level.SEVERE, null, ex);
+            return new ResponseEntity<>("Blueprint not found: " + bpname, HttpStatus.NOT_FOUND);
+        } catch (Exception ex) {
+            Logger.getLogger(BlueprintAPIController.class.getName()).log(Level.SEVERE, null, ex);
+            return new ResponseEntity<>("Error deleting blueprint: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

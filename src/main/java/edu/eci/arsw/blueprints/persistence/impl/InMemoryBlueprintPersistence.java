@@ -91,4 +91,20 @@ public class InMemoryBlueprintPersistence implements BlueprintsPersistence{
             throw new BlueprintNotFoundException("Blueprint not found: " + author + "/" + bprintname);
         }
     }
+
+    @Override
+    public void deleteBlueprint(String author, String bpName)
+            throws BlueprintNotFoundException, BlueprintPersistenceException{
+
+        Tuple<String, String> key = new Tuple<>(author, bpName);
+
+        // Verificamos si existe
+        if (!blueprints.containsKey(key)) {
+            throw new BlueprintNotFoundException("Blueprint not found: " + author + "/" + bpName);
+        }
+
+        blueprints.remove(key);
+    }
+
 }
+

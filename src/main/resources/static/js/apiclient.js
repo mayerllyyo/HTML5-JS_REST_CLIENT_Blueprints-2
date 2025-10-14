@@ -1,7 +1,7 @@
 var apiclient = (function(){
 
 
-    const baseUrl = "/api/blueprints";
+    const baseUrl = "/blueprintsApi/blueprints";
     
 
     const createBlueprint = (author, blueprint) => {
@@ -15,7 +15,6 @@ var apiclient = (function(){
                     points: blueprint.points
                 }),
                 contentType: "application/json",
-                dataType: "json",
                 success: function(data) {
                     resolve(data);
                 },

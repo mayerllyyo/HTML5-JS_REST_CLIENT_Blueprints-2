@@ -6,12 +6,10 @@
 package edu.eci.arsw.blueprints.services;
 
 import edu.eci.arsw.blueprints.model.Blueprint;
-import edu.eci.arsw.blueprints.model.Point;
 import edu.eci.arsw.blueprints.persistence.BlueprintNotFoundException;
 import edu.eci.arsw.blueprints.persistence.BlueprintPersistenceException;
 import edu.eci.arsw.blueprints.persistence.BlueprintsPersistence;
-import java.util.LinkedHashMap;
-import java.util.Map;
+
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -107,6 +105,35 @@ public class BlueprintsServices {
             bpp.updateBlueprint(author, name, updatedBlueprint);
         } catch (BlueprintNotFoundException e) {
             throw e;
+        }
+    }
+
+    /**
+     * Deletes an existing blueprint by author and name.
+     * <p>
+     * This method first checks whether the blueprint exists in the persistence layer.
+     * If found, it deletes it; otherwise, it throws a {@link BlueprintNotFoundException}.
+     * </p>
+     *
+     * @param author the author of the blueprint to delete
+     * @param bpName the name of the blueprint to delete
+     * @throws BlueprintNotFoundException if the specified blueprint does not exist
+     * @throws BlueprintPersistenceException if a persistence-related error occurs during deletion
+     */
+    public void delete(String author, String bpName)
+            throws BlueprintNotFoundException, BlueprintPersistenceException {
+        try {
+            Blueprint existingBlueprint = bpp.getBlueprint(author, bpName);
+            if (existingBlueprint == null) {
+                throw new BlueprintNotFoundException("Blueprint not found: " + author + "/" + bpName);
+            }
+
+            bpp.deleteBlueprint(author, bpName);
+
+        } catch (BlueprintNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BlueprintPersistenceException("Error deleting blueprint: " + e.getMessage());
         }
     }
 }
