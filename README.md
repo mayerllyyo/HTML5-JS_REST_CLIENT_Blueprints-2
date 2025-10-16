@@ -174,9 +174,8 @@ All operations are handled with Promises to ensure correct execution order.
                 }
             });
         });
-    };
-
-    ```
+     };
+ 		```
 
 
 	In app.js:
