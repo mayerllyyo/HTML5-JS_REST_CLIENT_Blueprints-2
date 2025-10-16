@@ -175,8 +175,8 @@ All operations are handled with Promises to ensure correct execution order.
             });
         });
     };
-	 
-	 ```
+
+    ```
 
 
 	In app.js:
@@ -271,3 +271,7 @@ All operations are handled with Promises to ensure correct execution order.
 		}
 	}
 	```
+
+	This is what the app looks like now with the new buttons:
+
+	![img](img/appActual.png)
