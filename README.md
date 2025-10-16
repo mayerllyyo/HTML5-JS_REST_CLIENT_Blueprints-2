@@ -143,19 +143,131 @@ All operations are handled with Promises to ensure correct execution order.
 	```
 
 
-4. **Add the **“Create new blueprint”** button so that when it is pressed:
-
-- The current canvas is cleared.  
-- The user is prompted to enter the name of the new blueprint (you decide how to do this).  
-- This option should modify how the **“save/update”** function works, since in this case, when it is pressed for the first time, it must (also using promises):
-
-  - Make a **POST** request to the **/blueprints** resource to create the new blueprint.  
-  - Make a **GET** request to the same resource to update the list of blueprints and the user’s score.
+4. Add the **'Create new blueprint'** button, so that when it is pressed:  
+   - The current canvas is cleared.  
+   - The user is prompted to enter the name of the new *blueprint* (you may decide how to request it).  
+   - This option should modify how the **'save/update'** button works, since in this case, the first time it is pressed it must (also using promises):  
+     - Perform a **POST** request to the `/blueprints` resource to create the new blueprint.  
+     - Perform a **GET** request to the same resource to update the list of blueprints and the user’s score.  
 
 
-  5. **Add the **“DELETE”** button so that (also using promises):
+	 In apiclient.js:
 
-- The canvas is cleared.  
-- A **DELETE** request is made to the corresponding resource.  
-- A **GET** request is made to retrieve the blueprints that are now available.
+	 ```javascript
+	 const createBlueprint = (author, blueprint) => {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: baseUrl,
+                type: "POST",
+                data: JSON.stringify({
+                    author: author,
+                    name: blueprint.name,
+                    points: blueprint.points
+                }),
+                contentType: "application/json",
+                success: function(data) {
+                    resolve(data);
+                },
+                error: function(error) {
+                    console.error("Error details:", error);
+                    reject(error);
+                }
+            });
+        });
+    };
+	 
+	 ```
 
+
+	In app.js:
+
+	```javascript
+	function createNewBlueprint() {
+    if (!selectedAuthor) {
+        return alert("Seleccione un autor primero");
+    }
+
+    clearCanvas();
+    
+    const blueprintName = prompt("Ingrese el nombre para el nuevo blueprint:");
+    if (!blueprintName || blueprintName.trim() === '') return;
+    
+    currentBlueprint = {
+        author: selectedAuthor,
+        name: blueprintName,
+        points: []
+    };
+    
+    // Actualizar la interfaz
+    $("#blueprint-name").text(blueprintName);
+    
+    // Marcar como nuevo blueprint para que el save actúe como create
+    isNewBlueprint = true;
+    
+    // Habilitar el botón de borrado
+    $("#btn-delete").prop("disabled", false);
+    
+    alert(`Nuevo blueprint "${blueprintName}" creado. Dibuje puntos y luego guarde para crear.`);
+	}
+
+	```
+
+
+
+
+
+5. Add the **'DELETE'** button, so that (also using promises):  
+   - It clears the canvas.  
+   - Performs a **DELETE** request to the corresponding resource.  
+   - Performs a **GET** request to retrieve the available blueprints.  
+
+   In apiclient.js
+   ```javascript
+   const deleteBlueprint = (author, blueprintName) => {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: baseUrl + "/" + author + "/" + blueprintName,
+                type: "DELETE",
+                success: function() {
+                    resolve();
+                },
+                error: function(error) {
+                    reject(error);
+                }
+            });
+        });
+    };
+	```
+
+	In app.js:
+
+	```javascript
+
+	function deleteCurrentBlueprint() {
+        if (!currentBlueprint || !selectedAuthor) {
+            alert("No hay un blueprint seleccionado para borrar");
+            return;
+        }
+        
+        if (confirm(`¿Está seguro que desea eliminar el blueprint "${currentBlueprint.name}"?`)) {
+            apiclient.deleteBlueprint(selectedAuthor, currentBlueprint.name)
+                .then(() => {
+                    clearCanvas();
+                    
+                    // Obtener la lista actualizada de blueprints
+                    return apiclient.getBlueprintsByAuthorPromise(selectedAuthor);
+                })
+                .then(data => {
+                    // Actualizar la tabla y el puntaje
+                    blueprints = data.map(bp => ({name: bp.name, points: bp.points.length}));
+                    updateBlueprintTableFromData(data);
+                    updateTotalPoints();
+                    alert("Blueprint eliminado exitosamente");
+                })
+                .catch(error => {
+                    console.error("Error al eliminar el blueprint:", error);
+                    alert("Error al eliminar el blueprint");
+                });
+		}
+	}
+	```
